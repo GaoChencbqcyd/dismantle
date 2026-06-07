@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "拆解",
+    "slug": "dismantle",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "dismantle",
+    "splash": {
+      "backgroundColor": "#F5F0EB"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.dismantle.anxiety",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "拆解需要使用麦克风进行语音记录，帮助你更便捷地记录焦虑事件。语音数据仅在设备本地处理，不会上传至服务器。",
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F5F0EB",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "app.dismantle.anxiety"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "supabaseUrl": "https://YOUR_PROJECT.supabase.co",
+      "supabaseAnonKey": "YOUR_ANON_KEY"
+    }
+  }
+}
