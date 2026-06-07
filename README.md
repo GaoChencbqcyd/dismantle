@@ -40,6 +40,14 @@ dismantle/
 
 ## 快速开始
 
+### 🎨 在线原型
+
+> **原型预览地址**：https://webview.e2b.sh1.sandbox.cloudstudio.club/?x-cs-sandbox-id=fec1f62c42514934bc842162a16e64a5&x-cs-sandbox-port=8000
+>
+> 点击上方链接即可体验完整的可交互原型（手机 App 模拟器，含登录/拆解/罗盘/洞察/我的等功能）。
+
+### 本地运行原型
+
 ```bash
 # 查看原型
 cd prototype && python3 -m http.server 8000
