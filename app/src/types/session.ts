@@ -10,6 +10,23 @@ export interface AnxietyFactor {
   order: number;
 }
 
+// ─── 认知重构相关类型 ────────────────────────────────────────
+
+/** 认知扭曲选择 */
+export interface DistortionSelection {
+  distortionId: number;   // 对应 content.ts 中 DISTORTIONS 的 id
+  rebuttalText: string;   // 用户写的反驳文本
+}
+
+/** 微小行动选择 */
+export interface ActionSelection {
+  category: string;        // 行动分类（如 '工作'、'财务'）
+  actionIndex: number;     // 选中的行动序号
+  customText?: string;     // 用户自定义行动（可选）
+}
+
+// ─── 会话数据 ─────────────────────────────────────────────────
+
 export interface AnxietySession {
   id: string;
   createdAt: string;
@@ -20,9 +37,22 @@ export interface AnxietySession {
   rawText: string;
   voiceUri: string | null;
   factors: AnxietyFactor[];
+
+  // Sprint 3: 认知重构
+  selectedDistortions: number[];        // 选中的认知扭曲 ID 列表
+  rebuttals: DistortionSelection[];     // 各扭曲的反驳文本
+
+  // Sprint 3: 微小行动
+  selectedActionIndex: number | null;   // 选中的行动序号
+  selectedActionCategory: string | null; // 行动所属分类
+
+  // 流程
   currentStep: DismantleStep;
   isCompleted: boolean;
   duration: number;
+
+  // 评分
+  anxietyAfter: number | null;          // 拆解后焦虑评分（Sprint 3）
 }
 
 export interface SessionSummary {
@@ -30,16 +60,19 @@ export interface SessionSummary {
   createdAt: string;
   emotion: CoreEmotion | null;
   anxietyLevel: number;
+  anxietyAfter: number | null;
   factorCount: number;
   controllableCount: number;
+  distortionCount: number;
+  hasAction: boolean;
   isCompleted: boolean;
 }
 
 export const EMOTION_OPTIONS = [
-  { id: 'anxiety' as CoreEmotion, emoji: '\u{1F630}', label: '\u7126\u8651' },
-  { id: 'anger' as CoreEmotion, emoji: '\u{1F624}', label: '\u6124\u6012' },
-  { id: 'sadness' as CoreEmotion, emoji: '\u{1F622}', label: '\u60B2\u4F24' },
-  { id: 'fear' as CoreEmotion, emoji: '\u{1F628}', label: '\u6050\u60E7' },
-  { id: 'confusion' as CoreEmotion, emoji: '\u{1F635}', label: '\u56F0\u60D1' },
-  { id: 'stress' as CoreEmotion, emoji: '\u{1F62E}\u200D\u{1F4A8}', label: '\u538B\u529B' },
+  { id: 'anxiety' as CoreEmotion, emoji: '😰', label: '焦虑' },
+  { id: 'anger' as CoreEmotion, emoji: '😤', label: '愤怒' },
+  { id: 'sadness' as CoreEmotion, emoji: '😢', label: '悲伤' },
+  { id: 'fear' as CoreEmotion, emoji: '😨', label: '恐惧' },
+  { id: 'confusion' as CoreEmotion, emoji: '😶', label: '困惑' },
+  { id: 'stress' as CoreEmotion, emoji: '😮‍💨', label: '压力' },
 ];
