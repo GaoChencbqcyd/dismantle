@@ -40,6 +40,12 @@ export const Typography = {
     letterSpacing: -0.03,
     fontWeight: '700' as const,
   },
+  hero: {
+    fontSize: FS.hero,
+    lineHeight: FS.hero * 1.1,
+    letterSpacing: -0.04,
+    fontWeight: '700' as const,
+  },
 } as const;
 
 export type TypographyVariant = keyof typeof Typography;

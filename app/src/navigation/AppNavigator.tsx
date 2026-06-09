@@ -4,14 +4,53 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme';
 
-// Placeholder screens — will be replaced in Sprint 2-5
+// Screens
 import { HomeScreen } from '../screens/HomeScreen';
 import { CompassScreen } from '../screens/CompassScreen';
 import { InsightScreen } from '../screens/InsightScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { RecordScreen } from '../screens/RecordScreen';
+import { ClassifyScreen } from '../screens/ClassifyScreen';
+import { ReframeScreen } from '../screens/ReframeScreen';
+import { ActionScreen } from '../screens/ActionScreen';
+import { SummaryScreen } from '../screens/SummaryScreen';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
+const DismantleStack = createNativeStackNavigator();
+
+// ─── 拆解流程 Stack ──────────────────────────────────────────
+
+function DismantleFlow() {
+  const { colors } = useTheme();
+
+  return (
+    <DismantleStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: { backgroundColor: colors.bgPrimary },
+        headerTintColor: colors.accent,
+        headerTitleStyle: { color: colors.textPrimary, fontWeight: '600', fontSize: 17 },
+        headerShadowVisible: false,
+        headerBackTitle: '返回',
+        contentStyle: { backgroundColor: colors.bgPrimary },
+      }}
+    >
+      <DismantleStack.Screen
+        name="Record"
+        component={RecordScreen}
+        options={{ title: '记录' }}
+      />
+      <DismantleStack.Screen
+        name="Classify"
+        component={ClassifyScreen}
+        options={{ title: '分类' }}
+      />
+    </DismantleStack.Navigator>
+  );
+}
+
+// ─── 底部 Tab ────────────────────────────────────────────────
 
 function HomeTabs() {
   const { colors } = useTheme();
@@ -80,7 +119,8 @@ function HomeTabs() {
   );
 }
 
-// Simple SVG-free tab icons using Unicode
+// ─── Tab 图标 ────────────────────────────────────────────────
+
 function TabIcon({ name, color, size }: { name: string; color: string; size: number }) {
   const icons: Record<string, string> = {
     home: '🏠',
@@ -88,17 +128,14 @@ function TabIcon({ name, color, size }: { name: string; color: string; size: num
     insight: '📊',
     profile: '👤',
   };
-  return (
-    <React.Fragment>
-      {/* Using Text as simple icon placeholder; will be replaced with proper SVG icons */}
-      {React.createElement(
-        require('react-native').Text,
-        { style: { fontSize: size - 2 } },
-        icons[name] || '●'
-      )}
-    </React.Fragment>
+  return React.createElement(
+    require('react-native').Text,
+    { style: { fontSize: size - 2 } },
+    icons[name] || '●',
   );
 }
+
+// ─── 根导航 ──────────────────────────────────────────────────
 
 export function AppNavigator() {
   const { colors, isDark } = useTheme();
@@ -117,9 +154,17 @@ export function AppNavigator() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={HomeTabs} />
-      </Stack.Navigator>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="Main" component={HomeTabs} />
+        <RootStack.Screen
+          name="DismantleFlow"
+          component={DismantleFlow}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }}
+        />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
