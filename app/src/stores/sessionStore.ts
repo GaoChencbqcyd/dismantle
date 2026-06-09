@@ -1,145 +1,329 @@
 import { create } from 'zustand';
 import {
   type CoreEmotion,
+  type InputMethod,
+  type CategoryType,
   type DismantleStep,
   type AnxietyFactor,
   type AnxietySession,
   type SessionSummary,
-  type ControlZone,
 } from '../types/session';
+import { KvStorage, STORAGE_KEYS } from '../services/storage';
 
-let factorCounter = 0;
-function createFactor(text: string): AnxietyFactor {
-  return { id: `f${++factorCounter}`, text, zone: null };
-}
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+  return 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
 
-interface SessionState {
+function generateFactorId(): string {
+  return 'factor_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function createEmptySession(): AnxietySession {
+  const now = new Date().toISOString();
+  return {
+    id: generateId(),
+    createdAt: now,
+    updatedAt: now,
+    emotion: null,
+    anxietyLevel: 5,
+    inputMethod: 'text',
+    rawText: '',
+    voiceUri: null,
+    factors: [],
+    currentStep: 'record',
+    isCompleted: false,
+    duration: 0,
+  };
+}
+
+export interface SessionState {
   currentSession: AnxietySession | null;
-  sessionHistory: AnxietySession[];
-  startSession: (emotion?: CoreEmotion) => void;
-  updateRecord: (text: string, scoreBefore: number) => void;
-  classifyFactor: (factorId: string, zone: ControlZone) => void;
-  unclassifyFactor: (factorId: string) => void;
-  allClassified: () => boolean;
-  selectDistortion: (id: number) => void;
-  unselectDistortion: (id: number) => void;
-  addRebuttal: (distortionId: number, text: string) => void;
-  selectAction: (index: number) => void;
-  completeSession: (scoreAfter: number) => void;
+  history: SessionSummary[];
+  hasDraft: boolean;
+
+  startSession: () => void;
+  resumeDraft: () => Promise<void>;
+  setEmotion: (emotion: CoreEmotion) => void;
+  setAnxietyLevel: (level: number) => void;
+  setInputMethod: (method: InputMethod) => void;
+  setRawText: (text: string) => void;
+  setVoiceUri: (uri: string | null) => void;
+  parseFactors: (rawText?: string) => void;
+  addFactor: (text: string) => void;
+  removeFactor: (id: string) => void;
+  setFactorCategory: (id: string, category: CategoryType) => void;
+  reorderFactors: (fromIndex: number, toIndex: number) => void;
   goToStep: (step: DismantleStep) => void;
-  resumeSession: () => AnxietySession | null;
+  saveDraft: () => Promise<void>;
+  clearDraft: () => Promise<void>;
+  completeSession: () => Promise<void>;
+  loadHistory: () => Promise<void>;
   resetSession: () => void;
-  getSummary: () => SessionSummary;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   currentSession: null,
-  sessionHistory: [],
+  history: [],
+  hasDraft: false,
 
-  startSession: (emotion) => {
-    factorCounter = 0;
+  startSession: () => {
+    set({
+      currentSession: createEmptySession(),
+      hasDraft: false,
+    });
+  },
+
+  resumeDraft: async () => {
+    const draft = await KvStorage.get<AnxietySession>(STORAGE_KEYS.SESSION_DRAFT);
+    if (draft) {
+      set({ currentSession: draft, hasDraft: true });
+    }
+  },
+
+  setEmotion: (emotion) => {
+    const s = get().currentSession;
+    if (!s) return;
     set({
       currentSession: {
-        id: generateId(),
-        emotion: emotion || null,
-        inputMethod: 'text',
-        recordText: '',
-        factors: [],
-        currentStep: 'record',
-        scoreBefore: 0,
-        scoreAfter: 0,
-        selectedDistortions: [],
-        rebuttals: [],
-        selectedActionIndex: null,
-        category: '默认',
-        status: 'in_progress',
-        createdAt: new Date().toISOString(),
-        completedAt: null,
+        ...s,
+        emotion,
+        updatedAt: new Date().toISOString(),
       },
     });
   },
 
-  updateRecord: (text, scoreBefore) => {
+  setAnxietyLevel: (level) => {
     const s = get().currentSession;
     if (!s) return;
-    const factors = text.split(/[。！？；\n]/).filter(x => x.trim()).map(x => createFactor(x.trim()));
-    if (factors.length === 0) factors.push(createFactor(text.trim()));
-    set({ currentSession: { ...s, recordText: text, scoreBefore, factors } });
+    const clamped = Math.max(1, Math.min(10, Math.round(level)));
+    set({
+      currentSession: {
+        ...s,
+        anxietyLevel: clamped,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  classifyFactor: (factorId, zone) => {
+  setInputMethod: (method) => {
     const s = get().currentSession;
     if (!s) return;
-    set({ currentSession: { ...s, factors: s.factors.map(f => f.id === factorId ? { ...f, zone } : f) } });
+    set({
+      currentSession: {
+        ...s,
+        inputMethod: method,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  unclassifyFactor: (factorId) => {
+  setRawText: (text) => {
     const s = get().currentSession;
     if (!s) return;
-    set({ currentSession: { ...s, factors: s.factors.map(f => f.id === factorId ? { ...f, zone: null } : f) } });
+    set({
+      currentSession: {
+        ...s,
+        rawText: text,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  allClassified: () => {
-    const s = get().currentSession;
-    return !!s && s.factors.length > 0 && s.factors.every(f => f.zone !== null);
-  },
-
-  selectDistortion: (id) => {
-    const s = get().currentSession;
-    if (!s || s.selectedDistortions.includes(id)) return;
-    set({ currentSession: { ...s, selectedDistortions: [...s.selectedDistortions, id] } });
-  },
-
-  unselectDistortion: (id) => {
+  setVoiceUri: (uri) => {
     const s = get().currentSession;
     if (!s) return;
-    set({ currentSession: { ...s, selectedDistortions: s.selectedDistortions.filter(d => d !== id), rebuttals: s.rebuttals.filter(r => r.distortionId !== id) } });
+    set({
+      currentSession: {
+        ...s,
+        voiceUri: uri,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  addRebuttal: (distortionId, text) => {
+  parseFactors: (rawText) => {
     const s = get().currentSession;
     if (!s) return;
-    const idx = s.rebuttals.findIndex(r => r.distortionId === distortionId);
-    const newR = [...s.rebuttals];
-    if (idx >= 0) newR[idx] = { distortionId, rebuttalText: text };
-    else newR.push({ distortionId, rebuttalText: text });
-    set({ currentSession: { ...s, rebuttals: newR } });
+    const text = rawText !== undefined ? rawText : s.rawText;
+    const parts = text
+      .split(/[\u3002\uFF1B\uFF1B\uFF0C\uFF0C\n\u3001]/)
+      .filter(function (x) {
+        return x.trim().length > 0;
+      })
+      .map(function (x) {
+        return x.trim();
+      });
+    const factors: AnxietyFactor[] = parts.map(function (t, i) {
+      return {
+        id: generateFactorId(),
+        text: t,
+        category: 'unclassified' as CategoryType,
+        order: i,
+      };
+    });
+    set({
+      currentSession: {
+        ...s,
+        factors,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  selectAction: (index) => {
+  addFactor: (text) => {
     const s = get().currentSession;
     if (!s) return;
-    set({ currentSession: { ...s, selectedActionIndex: index } });
+    const newFactor: AnxietyFactor = {
+      id: generateFactorId(),
+      text,
+      category: 'unclassified',
+      order: s.factors.length,
+    };
+    set({
+      currentSession: {
+        ...s,
+        factors: [...s.factors, newFactor],
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  completeSession: (scoreAfter) => {
+  removeFactor: (id) => {
     const s = get().currentSession;
     if (!s) return;
-    const done: AnxietySession = { ...s, status: 'completed', currentStep: 'complete', scoreAfter, completedAt: new Date().toISOString() };
-    set({ currentSession: done, sessionHistory: [done, ...get().sessionHistory] });
+    const filtered = s.factors
+      .filter(function (f) {
+        return f.id !== id;
+      })
+      .map(function (f, i) {
+        return { ...f, order: i };
+      });
+    set({
+      currentSession: {
+        ...s,
+        factors: filtered,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  },
+
+  setFactorCategory: (id, category) => {
+    const s = get().currentSession;
+    if (!s) return;
+    set({
+      currentSession: {
+        ...s,
+        factors: s.factors.map(function (f) {
+          if (f.id === id) {
+            return { ...f, category };
+          }
+          return f;
+        }),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  },
+
+  reorderFactors: (fromIndex, toIndex) => {
+    const s = get().currentSession;
+    if (!s) return;
+    const factors = [...s.factors];
+    const item = factors.splice(fromIndex, 1)[0];
+    factors.splice(toIndex, 0, item);
+    const reordered = factors.map(function (f, i) {
+      return { ...f, order: i };
+    });
+    set({
+      currentSession: {
+        ...s,
+        factors: reordered,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
   goToStep: (step) => {
     const s = get().currentSession;
-    if (s) set({ currentSession: { ...s, currentStep: step } });
+    if (!s) return;
+    set({
+      currentSession: {
+        ...s,
+        currentStep: step,
+        updatedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  resumeSession: () => {
+  saveDraft: async () => {
     const s = get().currentSession;
-    return s && s.status === 'in_progress' ? s : null;
+    if (!s) return;
+    try {
+      await KvStorage.set(STORAGE_KEYS.SESSION_DRAFT, s);
+      set({ hasDraft: true });
+    } catch (e) {
+      console.error('[sessionStore] saveDraft failed:', e);
+    }
   },
 
-  resetSession: () => set({ currentSession: null }),
+  clearDraft: async () => {
+    try {
+      await KvStorage.remove(STORAGE_KEYS.SESSION_DRAFT);
+      set({ hasDraft: false });
+    } catch (e) {
+      console.error('[sessionStore] clearDraft failed:', e);
+    }
+  },
 
-  getSummary: () => {
-    const h = get().sessionHistory;
-    if (h.length === 0) return { totalSessions: 0, avgScoreBefore: 0, avgScoreAfter: 0, avgImprovement: 0 };
-    const n = h.length;
-    const sb = h.reduce((a, x) => a + x.scoreBefore, 0);
-    const sa = h.reduce((a, x) => a + x.scoreAfter, 0);
-    return { totalSessions: n, avgScoreBefore: Math.round(sb / n), avgScoreAfter: Math.round(sa / n), avgImprovement: Math.round((sb - sa) / n) };
+  completeSession: async () => {
+    const s = get().currentSession;
+    if (!s) return;
+    const completed: AnxietySession = {
+      ...s,
+      isCompleted: true,
+      currentStep: 'complete',
+      updatedAt: new Date().toISOString(),
+      duration: Date.now() - new Date(s.createdAt).getTime(),
+    };
+
+    const summary: SessionSummary = {
+      id: s.id,
+      createdAt: s.createdAt,
+      emotion: s.emotion,
+      anxietyLevel: s.anxietyLevel,
+      factorCount: s.factors.length,
+      controllableCount: s.factors.filter(function (f) {
+        return f.category === 'controllable';
+      }).length,
+      isCompleted: true,
+    };
+
+    try {
+      const existing = await KvStorage.get<SessionSummary[]>(STORAGE_KEYS.SESSION_HISTORY);
+      const updated = [summary, ...(existing || [])];
+      await KvStorage.set(STORAGE_KEYS.SESSION_HISTORY, updated);
+      await KvStorage.remove(STORAGE_KEYS.SESSION_DRAFT);
+      set({
+        currentSession: completed,
+        history: updated,
+        hasDraft: false,
+      });
+    } catch (e) {
+      console.error('[sessionStore] completeSession failed:', e);
+    }
+  },
+
+  loadHistory: async () => {
+    try {
+      const existing = await KvStorage.get<SessionSummary[]>(STORAGE_KEYS.SESSION_HISTORY);
+      if (existing) {
+        set({ history: existing });
+      }
+    } catch (e) {
+      console.error('[sessionStore] loadHistory failed:', e);
+    }
+  },
+
+  resetSession: () => {
+    set({ currentSession: null, hasDraft: false });
   },
 }));

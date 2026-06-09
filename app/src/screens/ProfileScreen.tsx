@@ -3,41 +3,45 @@ import { View, ScrollView } from 'react-native';
 import { useTheme } from '../theme';
 import { AppText, Card } from '../components';
 import { useSessionStore } from '../stores/sessionStore';
+import { KvStorage, STORAGE_KEYS } from '../services/storage';
 
 export function ProfileScreen() {
   const { colors } = useTheme();
-  const summary = useSessionStore(s => s.getSummary());
+  const history = useSessionStore(function (s) { return s.history; });
+
+  const totalSessions = history.length;
+  const completedSessions = history.filter(function (s) { return s.isCompleted; }).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
-        <AppText variant="heading">我的</AppText>
+        <AppText variant="heading">{'\u6211\u7684'}</AppText>
         <AppText variant="small" muted style={{ marginTop: 4, marginBottom: 20 }}>
-          个人中心（Sprint 5 完整实现）
+          {'\u4E2A\u4EBA\u4E2D\u5FC3\uFF08Sprint 5 \u5B8C\u6574\u5B9E\u73B0\uFF09'}
         </AppText>
 
         <Card padding={28} style={{ alignItems: 'center' }}>
-          <AppText variant="heading" style={{ marginBottom: 8 }}>🧠</AppText>
-          <AppText variant="subtitle">拆解用户</AppText>
+          <AppText variant="heading" style={{ marginBottom: 8 }}>{'\uD83E\uDDE0'}</AppText>
+          <AppText variant="subtitle">{'\u62C6\u89E3\u7528\u6237'}</AppText>
           <AppText variant="small" muted style={{ marginTop: 4 }}>
-            已使用 {summary.totalSessions > 0 ? '多' : '0'} 天 · 完成 {summary.totalSessions} 次拆解
+            {'\u5DF2\u4F7F\u7528 ' + (totalSessions > 0 ? '\u591A' : '0') + ' \u5929 \u00B7 \u5B8C\u6210 ' + completedSessions + ' \u6B21\u62C6\u89E3'}
           </AppText>
         </Card>
 
         <AppText variant="small" muted style={{ marginTop: 20, marginBottom: 8 }}>
-          功能
+          {'\u529F\u80FD'}
         </AppText>
-        <Card interactive onPress={() => {}} padding={16}>
-          <AppText variant="body">⏰ 智能提醒</AppText>
-          <AppText variant="caption" muted>未开启</AppText>
+        <Card interactive onPress={function () {}} padding={16}>
+          <AppText variant="body">{'\u23F0 \u667A\u80FD\u63D0\u9192'}</AppText>
+          <AppText variant="caption" muted>{'\u672A\u5F00\u542F'}</AppText>
         </Card>
-        <Card interactive onPress={() => {}} padding={16}>
-          <AppText variant="body">📤 数据导出</AppText>
-          <AppText variant="caption" muted>导出PDF或文本</AppText>
+        <Card interactive onPress={function () {}} padding={16}>
+          <AppText variant="body">{'\uD83D\uDCE4 \u6570\u636E\u5BFC\u51FA'}</AppText>
+          <AppText variant="caption" muted>{'\u5BFC\u51FAPDF\u6216\u6587\u672C'}</AppText>
         </Card>
-        <Card interactive onPress={() => {}} padding={16}>
-          <AppText variant="body">⚙️ 设置</AppText>
-          <AppText variant="caption" muted>主题、隐私、关于</AppText>
+        <Card interactive onPress={function () {}} padding={16}>
+          <AppText variant="body">{'\u2699\uFE0F \u8BBE\u7F6E'}</AppText>
+          <AppText variant="caption" muted>{'\u4E3B\u9898\u3001\u9690\u79C1\u3001\u5173\u4E8E'}</AppText>
         </Card>
       </ScrollView>
     </View>

@@ -9,11 +9,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { CompassScreen } from '../screens/CompassScreen';
 import { InsightScreen } from '../screens/InsightScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { RecordScreen } from '../screens/RecordScreen';
-import { ClassifyScreen } from '../screens/ClassifyScreen';
-import { ReframeScreen } from '../screens/ReframeScreen';
-import { ActionScreen } from '../screens/ActionScreen';
-import { SummaryScreen } from '../screens/SummaryScreen';
+import { RecordScreen } from '../screens/dismantle/RecordScreen';
+import { ClassifyScreen } from '../screens/dismantle/ClassifyScreen';
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
