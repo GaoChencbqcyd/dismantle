@@ -68,6 +68,24 @@ export interface SessionSummary {
   isCompleted: boolean;
 }
 
+// ─── 罗盘价值观相关类型 ──────────────────────────────────────
+
+/** 价值观卡牌（含用户选择状态） */
+export interface ValueCard {
+  id: string;           // 价值观文本作为唯一标识
+  text: string;         // 价值观名称
+  selected: boolean;    // 是否被用户选中
+  rank: number | null;  // Top 5 排名（1-5），null 表示未进入 Top 5
+}
+
+/** 罗盘结果（持久化） */
+export interface CompassResult {
+  top5: string[];       // 排名 1-5 的价值观
+  selected: string[];   // 用户选中的所有价值观
+  createdAt: string;    // 创建时间
+  updatedAt: string;    // 更新时间
+}
+
 export const EMOTION_OPTIONS = [
   { id: 'anxiety' as CoreEmotion, emoji: '😰', label: '焦虑' },
   { id: 'anger' as CoreEmotion, emoji: '😤', label: '愤怒' },
